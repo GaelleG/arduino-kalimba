@@ -1,0 +1,15 @@
+#define ANALOG_MAX    1024.
+#define TONE_A1        110.
+#define OCTAVE           3.
+#define QUOTIENT_A   0./12.
+#define QUOTIENT_AS  1./12.
+#define QUOTIENT_B   2./12.
+#define QUOTIENT_C   3./12.
+#define QUOTIENT_CS  4./12.
+#define QUOTIENT_D   5./12.
+#define QUOTIENT_DS  6./12.
+#define QUOTIENT_E   7./12.
+#define QUOTIENT_F   8./12.
+#define QUOTIENT_FS  9./12.
+#define QUOTIENT_G  10./12.
+#define QUOTIENT_GS 11./12.
