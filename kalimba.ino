@@ -30,10 +30,22 @@ void setup() {
 void loop() {
   int sensorValue = analogRead(A0);
   double frequency = getTone(sensorValue);
+  //double frequencyList[TONE_LIST_SIZE];
+  //setToneList(sensorValue, frequencyList);
 
   if (frequency != previousTone) {
     tone(9, frequency, 50);
+    //toneFrequencyList(frequencyList);
   }
 
   previousTone = frequency;
+}
+
+void toneFrequencyList(double* frequencyList) {
+  for (int i = 0; i < TONE_LIST_SIZE; i++) {
+    tone(9, frequencyList[i], 50);
+    if (i < TONE_LIST_SIZE - 1) {
+      delay(50);
+    }
+  }
 }
