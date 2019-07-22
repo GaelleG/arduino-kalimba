@@ -38,11 +38,22 @@ struct Sensor sensorList[2] = {
 
 Sensor *sensor;
 
+int timeList[2] = {0, 250};
+
 void setup() {
   Serial.begin(9600);
 }
 
 void loop() {
+  for (int i = 0; i < 2; i++) {
+    timeList[i]++;
+    if (timeList[i] > 500) {
+      timeList[i] -= 500;
+      sensor = &sensorList[i];
+      tone(9, sensor->previousFrequency, 20);
+    }
+  }
+
   for (int i = 0; i < 2; i++) {
     sensor = &sensorList[i];
     sensor->value = analogRead(sensor->pin);
