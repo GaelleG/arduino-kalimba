@@ -38,9 +38,14 @@ struct Sensor sensorList[2] = {
 
 Sensor *sensor;
 
-int timeList[2] = {0, 250};
+const unsigned long MINUTE = 60000;
+unsigned long time = millis();
+unsigned long previousTime = millis();
+unsigned long elapsedTime = 0.;
+unsigned long tempo = MINUTE / 120.;
+unsigned long timeList[2] = {0., tempo / 2.};
 
-void toneEcho();
+void toneEcho(unsigned long elapsedTime);
 void toneSensorFrequency();
 
 void setup() {
@@ -48,15 +53,18 @@ void setup() {
 }
 
 void loop() {
-  toneEcho();
+  time = millis();
+  elapsedTime = time - previousTime;
+  previousTime = time;
+  toneEcho(elapsedTime);
   toneSensorFrequency();
 }
 
-void toneEcho() {
+void toneEcho(unsigned long elapsedTime) {
   for (int i = 0; i < 2; i++) {
-    timeList[i]++;
-    if (timeList[i] > 500) {
-      timeList[i] -= 500;
+    timeList[i] += elapsedTime;
+    if (timeList[i] > tempo) {
+      timeList[i] -= tempo;
       sensor = &sensorList[i];
       tone(9, sensor->previousFrequency, 20);
     }
