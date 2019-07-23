@@ -40,11 +40,19 @@ Sensor *sensor;
 
 int timeList[2] = {0, 250};
 
+void toneEcho();
+void toneSensorFrequency();
+
 void setup() {
   Serial.begin(9600);
 }
 
 void loop() {
+  toneEcho();
+  toneSensorFrequency();
+}
+
+void toneEcho() {
   for (int i = 0; i < 2; i++) {
     timeList[i]++;
     if (timeList[i] > 500) {
@@ -53,7 +61,9 @@ void loop() {
       tone(9, sensor->previousFrequency, 20);
     }
   }
+}
 
+void toneSensorFrequency() {
   for (int i = 0; i < 2; i++) {
     sensor = &sensorList[i];
     sensor->value = analogRead(sensor->pin);
