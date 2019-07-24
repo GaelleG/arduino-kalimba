@@ -28,11 +28,12 @@ struct Sensor {
   int previousValue;
   int convertedValue;
   int previousConvertedValue;
+  int lastValueUpdate;
 };
 
 struct Sensor sensorList[2] = {
-  {A0, 0, 0, 0, 0},
-  {A1, 0, 0, 0, 0}
+  {A0, 0, 0, 0, 0, 0},
+  {A1, 0, 0, 0, 0, 0}
 };
 
 Sensor *sensor;
@@ -42,13 +43,14 @@ unsigned long time = millis();
 unsigned long previousTime = millis();
 unsigned long elapsedTime = 0.;
 
-struct Sensor tempoSensor = {A2, 0, 0, 0, 0};
+struct Sensor tempoSensor = {A2, 0, 0, 0, 0, 0};
 
 unsigned long timeList[2] = {0., 0.};
 
 void setTempo();
-void toneEcho(unsigned long elapsedTime);
+void toneEcho();
 void toneSensorFrequency();
+bool hysteresis(Sensor* currentSensor);
 
 void setup() {
   Serial.begin(9600);
@@ -60,7 +62,7 @@ void loop() {
   previousTime = time;
 
   setTempo();
-  toneEcho(elapsedTime);
+  toneEcho();
   toneSensorFrequency();
 }
 
@@ -73,7 +75,8 @@ void setTempo() {
   // tempo = 60 + signal * (210 - 60) / 1024
   tempoSensor.value = analogRead(tempoSensor.pin);
 
-  if (abs(tempoSensor.value - tempoSensor.previousValue) > 10) {
+  if (hysteresis(&tempoSensor)) {
+    tempoSensor.lastValueUpdate = time;
     tempoSensor.previousValue = tempoSensor.value;
     tempoSensor.previousConvertedValue = tempoSensor.convertedValue;
     tempoSensor.convertedValue = MINUTE / (60. + tempoSensor.value * (210. - 60.) / 1024. + 1.);
@@ -82,7 +85,7 @@ void setTempo() {
   }
 }
 
-void toneEcho(unsigned long elapsedTime) {
+void toneEcho() {
   for (int i = 0; i < 2; i++) {
     timeList[i] += elapsedTime;
     if (timeList[i] > tempoSensor.convertedValue) {
@@ -97,11 +100,18 @@ void toneSensorFrequency() {
   for (int i = 0; i < 2; i++) {
     sensor = &sensorList[i];
     sensor->value = analogRead(sensor->pin);
-    sensor->convertedValue = getTone(sensor->value, i);
 
-    if (sensor->convertedValue != sensor->previousConvertedValue) {
-      tone(9, sensor->convertedValue, 50);
+    if (hysteresis(sensor)) {
+      sensor->lastValueUpdate = time;
+      sensor->previousValue = sensor->value;
+      sensor->convertedValue = getTone(sensor->value, i);
       sensor->previousConvertedValue = sensor->convertedValue;
+
+      tone(9, sensor->convertedValue, 50);
     }
   }
+}
+
+bool hysteresis(Sensor* currentSensor) {
+  return (time - currentSensor->lastValueUpdate > 100 && abs(currentSensor->value - currentSensor->previousValue) > 4);
 }
