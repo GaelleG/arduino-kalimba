@@ -67,7 +67,7 @@ void loop() {
 }
 
 void setTempo() {
-  // From 30bpm to 210bpm
+  // From 60bpm to 210bpm
   // ----------------------
   // |  0 < signal < 1024 |
   // | 60 <  tempo <  210 |
