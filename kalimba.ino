@@ -8,9 +8,10 @@
   - one potentiometer 10k from analog pin A1 through 5 to ground
   - one potentiometer 10k from analog pin A2 through 5 to ground
   - one speaker on digital pin 9~
+  - one switch from 5 through 220 resistor to pin 2
 
-  created  5th  Jully 2019
-  modified 23th Jully 2019
+  created  5th  July 2019
+  modified 28th July 2019
   by Gaelle Gomez
 
   GNU GPLv3
@@ -47,6 +48,11 @@ struct Sensor tempoSensor = {A2, 0, 0, 0, 0, 0};
 
 unsigned long timeList[2] = {0., 0.};
 
+const int STATE_RUNNING = 1;
+const int STATE_STOPPED = -1;
+struct Sensor stateSensor = {2, 0, LOW, STATE_STOPPED, STATE_STOPPED, 0};
+
+void setState();
 void setTempo();
 void toneEcho();
 void toneSensorFrequency();
@@ -54,6 +60,7 @@ bool hysteresis(Sensor* currentSensor);
 
 void setup() {
   Serial.begin(9600);
+  pinMode(stateSensor.pin, INPUT);
 }
 
 void loop() {
@@ -61,9 +68,25 @@ void loop() {
   elapsedTime = time - previousTime;
   previousTime = time;
 
-  setTempo();
-  toneEcho();
-  toneSensorFrequency();
+  setState();
+
+  if (stateSensor.convertedValue == STATE_RUNNING) {
+    setTempo();
+    toneEcho();
+    toneSensorFrequency();
+  }
+}
+
+void setState() {
+  stateSensor.value = digitalRead(stateSensor.pin);
+
+  if (time - stateSensor.lastValueUpdate > 500 && stateSensor.value == HIGH && stateSensor.previousValue != stateSensor.value) {
+    stateSensor.convertedValue *= -1;
+    stateSensor.previousConvertedValue = stateSensor.convertedValue;
+    stateSensor.lastValueUpdate = time;
+  }
+
+  stateSensor.previousValue = stateSensor.value;
 }
 
 void setTempo() {
