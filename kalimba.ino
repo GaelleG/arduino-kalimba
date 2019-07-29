@@ -4,11 +4,12 @@
   Plays a range of notes that change according to the analog input.
 
   Circuit:
-  - one potentiometer 10k from analog pin A0 through 5 to ground
-  - one potentiometer 10k from analog pin A1 through 5 to ground
-  - one potentiometer 10k from analog pin A2 through 5 to ground
-  - one speaker on digital pin 9~
-  - one switch from 5 through 220 resistor to pin 2
+  - one potentiometer 10k from analog pin through 5 to ground
+  - one potentiometer 10k from analog pin through 5 to ground
+  - one potentiometer 10k from analog pin through 5 to ground
+  - one potentiometer 10k from analog pin through 5 to ground
+  - one switch from 5 through 220 resistor to digital pin
+  - one speaker on digital pin ~
 
   created  5th  July 2019
   modified 28th July 2019
@@ -23,6 +24,13 @@
 // #include "frequencies.h"
 // #include "semitones.h"
 
+const int STATE_PIN = 13;
+const int TEMPO_PIN_1 = A0;
+const int VOICE_PIN_1 = A1;
+const int VOICE_PIN_2 = A2;
+const int VOICE_PIN_3 = A3;
+const int PIEZO_PIN = 3;
+
 struct Sensor {
   int pin;
   int value;
@@ -33,8 +41,9 @@ struct Sensor {
 };
 
 struct Sensor sensorList[VOICES_COUNT] = {
-  {A0, 0, 0, 0, 0, 0},
-  {A1, 0, 0, 0, 0, 0}
+  {VOICE_PIN_1, 0, 0, 0, 0, 0},
+  {VOICE_PIN_2, 0, 0, 0, 0, 0},
+  {VOICE_PIN_3, 0, 0, 0, 0, 0}
 };
 
 Sensor *sensor;
@@ -44,13 +53,13 @@ unsigned long time = millis();
 unsigned long previousTime = millis();
 unsigned long elapsedTime = 0.;
 
-struct Sensor tempoSensor = {A2, 0, 0, 0, 0, 0};
+struct Sensor tempoSensor = {TEMPO_PIN_1, 0, 0, 0, 0, 0};
 
-unsigned long timeList[2] = {0., 0.};
+unsigned long timeList[VOICES_COUNT] = {0.};
 
 const int STATE_RUNNING = 1;
 const int STATE_STOPPED = -1;
-struct Sensor stateSensor = {2, 0, LOW, STATE_STOPPED, STATE_STOPPED, 0};
+struct Sensor stateSensor = {STATE_PIN, 0, LOW, STATE_STOPPED, STATE_STOPPED, 0};
 
 void setState();
 void setTempo();
@@ -105,23 +114,26 @@ void setTempo() {
     tempoSensor.previousConvertedValue = tempoSensor.convertedValue;
     tempoSensor.convertedValue = MINUTE / (60. + tempoSensor.value * (210. - 60.) / 1024. + 1.);
 
-    timeList[1] = timeList[0] + tempoSensor.convertedValue / 2.;
+    double tempoGap = tempoSensor.convertedValue / VOICES_COUNT;
+    for (int i = 1; i < VOICES_COUNT; i++) {
+      timeList[i] = timeList[i - 1] + tempoGap;
+    }
   }
 }
 
 void toneEcho() {
-  for (int i = 0; i < 2; i++) {
+  for (int i = 0; i < VOICES_COUNT; i++) {
     timeList[i] += elapsedTime;
     if (timeList[i] > tempoSensor.convertedValue) {
       timeList[i] -= tempoSensor.convertedValue;
       sensor = &sensorList[i];
-      tone(9, sensor->previousConvertedValue, 20);
+      tone(PIEZO_PIN, sensor->previousConvertedValue, 20);
     }
   }
 }
 
 void toneSensorFrequency() {
-  for (int i = 0; i < 2; i++) {
+  for (int i = 0; i < VOICES_COUNT; i++) {
     sensor = &sensorList[i];
     sensor->value = analogRead(sensor->pin);
 
@@ -131,7 +143,7 @@ void toneSensorFrequency() {
       sensor->convertedValue = getTone(sensor->value, i);
       sensor->previousConvertedValue = sensor->convertedValue;
 
-      tone(9, sensor->convertedValue, 50);
+      tone(PIEZO_PIN, sensor->convertedValue, 50);
     }
   }
 }

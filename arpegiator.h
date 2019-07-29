@@ -4,7 +4,7 @@ int getTone(int signal, int sensorIndex);
 void setFrequencies();
 int getFrequency(double quotient);
 
-const int VOICES_COUNT = 2;
+const int VOICES_COUNT = 3;
 const int NOTES_COUNT = 16;
 
 const double VOICES[VOICES_COUNT][NOTES_COUNT] = {
@@ -43,6 +43,24 @@ const double VOICES[VOICES_COUNT][NOTES_COUNT] = {
     1. + 4. + QUOTIENT_A,
     1. + 4. + QUOTIENT_C,
     1. + 4. + QUOTIENT_E
+  },
+  {
+    2. + 0. + QUOTIENT_A,
+    2. + 0. + QUOTIENT_C,
+    2. + 0. + QUOTIENT_E,
+    2. + 0. + QUOTIENT_F,
+    2. + 1. + QUOTIENT_A,
+    2. + 1. + QUOTIENT_C,
+    2. + 1. + QUOTIENT_E,
+    2. + 1. + QUOTIENT_F,
+    2. + 2. + QUOTIENT_A,
+    2. + 2. + QUOTIENT_C,
+    2. + 2. + QUOTIENT_E,
+    2. + 2. + QUOTIENT_F,
+    2. + 3. + QUOTIENT_A,
+    2. + 3. + QUOTIENT_C,
+    2. + 3. + QUOTIENT_E,
+    2. + 3. + QUOTIENT_F
   }
 };
 
