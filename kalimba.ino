@@ -9,10 +9,11 @@
   - one potentiometer 10k from analog pin through 5 to ground
   - one potentiometer 10k from analog pin through 5 to ground
   - one switch from 5 through 220 resistor to digital pin
-  - one speaker on digital pin ~
+  - one LED from digital pin through 220 to ground
+  - one speaker from digital pin to ground
 
   created  5th  July 2019
-  modified 28th July 2019
+  modified 29th July 2019
   by Gaelle Gomez
 
   GNU GPLv3
@@ -30,6 +31,7 @@ const int VOICE_PIN_1 = A1;
 const int VOICE_PIN_2 = A2;
 const int VOICE_PIN_3 = A3;
 const int PIEZO_PIN = 3;
+const int LED_PINS[VOICES_COUNT] = {11, 10, 9};
 
 struct Sensor {
   int pin;
@@ -128,6 +130,13 @@ void toneEcho() {
       timeList[i] -= tempoSensor.convertedValue;
       sensor = &sensorList[i];
       tone(PIEZO_PIN, sensor->previousConvertedValue, 20);
+      for (int j = 0; j < VOICES_COUNT; j++) {
+        if (j == i) {
+          digitalWrite(LED_PINS[j], 1);
+        } else {
+          digitalWrite(LED_PINS[j], 0);
+        }
+      }
     }
   }
 }
