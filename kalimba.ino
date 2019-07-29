@@ -32,7 +32,7 @@ struct Sensor {
   int lastValueUpdate;
 };
 
-struct Sensor sensorList[2] = {
+struct Sensor sensorList[VOICES_COUNT] = {
   {A0, 0, 0, 0, 0, 0},
   {A1, 0, 0, 0, 0, 0}
 };
@@ -61,6 +61,7 @@ bool hysteresis(Sensor* currentSensor);
 void setup() {
   Serial.begin(9600);
   pinMode(stateSensor.pin, INPUT);
+  setFrequencies();
 }
 
 void loop() {
