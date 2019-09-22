@@ -88,6 +88,7 @@ void loop() {
 
   if (onOffSensor.convertedValue == ON) {
     setRecorderState();
+    setRecorderLED();
     setTempo();
     toneEcho();
     toneSensorFrequency();
@@ -106,6 +107,16 @@ void setState() {
 void setRecorderState() {
   for (int i = 0; i < VOICES_COUNT; ++i) {
     setPushButton(&recordSensorList[i]);
+  }
+}
+
+void setRecorderLED() {
+  for (int i = 0; i < VOICES_COUNT; ++i) {
+    if (recordSensorList[i].value == HIGH) {
+      digitalWrite(PIN_RECORD_LED_LIST[i], 1);
+    } else {
+      digitalWrite(PIN_RECORD_LED_LIST[i], 0);
+    }
   }
 }
 
@@ -140,13 +151,6 @@ void toneEcho() {
       if (recordSensorList[i].convertedValue == ON) {
         sensor = &toneSensorList[i];
         tone(PIN_SPEAKER, sensor->previousConvertedValue, 20);
-        for (int j = 0; j < VOICES_COUNT; j++) {
-          if (j == i) {
-            digitalWrite(PIN_RECORD_LED_LIST[j], 1);
-          } else {
-            digitalWrite(PIN_RECORD_LED_LIST[j], 0);
-          }
-        }
       }
     }
   }
