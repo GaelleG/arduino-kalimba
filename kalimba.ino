@@ -4,16 +4,15 @@
   Plays a range of notes that change according to the analog input.
 
   Circuit:
-  - one potentiometer 10k from analog pin through 5 to ground
-  - one potentiometer 10k from analog pin through 5 to ground
-  - one potentiometer 10k from analog pin through 5 to ground
-  - one potentiometer 10k from analog pin through 5 to ground
-  - one switch from 5 through 220 resistor to digital pin
-  - one LED from digital pin through 220 to ground
-  - one speaker from digital pin to ground
+  - 4 potentiometers 10k
+  - 4 push buttons
+  - 4 220 resistors
+  - 3 LEDs
+  - 3 10k resistors
+  - 1 speaker
 
-  created  5th  July 2019
-  modified 29th July 2019
+  created  2019-07-05
+  modified 2019-09-22
   by Gaelle Gomez
 
   GNU GPLv3
@@ -22,16 +21,6 @@
 */
 
 #include "arpegiator.h"
-// #include "frequencies.h"
-// #include "semitones.h"
-
-const int STATE_PIN = 13;
-const int TEMPO_PIN_1 = A0;
-const int VOICE_PIN_1 = A1;
-const int VOICE_PIN_2 = A2;
-const int VOICE_PIN_3 = A3;
-const int PIEZO_PIN = 3;
-const int LED_PINS[VOICES_COUNT] = {11, 10, 9};
 
 struct Sensor {
   int pin;
@@ -42,36 +31,51 @@ struct Sensor {
   int lastValueUpdate;
 };
 
-struct Sensor sensorList[VOICES_COUNT] = {
-  {VOICE_PIN_1, 0, 0, 0, 0, 0},
-  {VOICE_PIN_2, 0, 0, 0, 0, 0},
-  {VOICE_PIN_3, 0, 0, 0, 0, 0}
+// ==================================================================== PIN LIST
+// ------------------------------------------------------------------------ read
+const int PIN_ON_OFF = 13;
+const int PIN_RECORD_LIST[VOICES_COUNT] = {12, 11, 10};
+const int PIN_TONE_LIST[VOICES_COUNT] = {A1, A2, A3};
+const int PIN_TEMPO = A0;
+// ----------------------------------------------------------------------- write
+const int PIN_SPEAKER = 3;
+const int PIN_RECORD_LED_LIST[VOICES_COUNT] = {7, 6, 5};
+
+// ================================================================= ACTION LIST
+// ---------------------------------------------------------------------- ON OFF
+const int ON = 1;
+const int OFF = -1;
+struct Sensor onOffSensor = {PIN_ON_OFF, 0, LOW, OFF, OFF, 0};
+// ---------------------------------------------------------------------- VOICES
+// ······································································ record
+struct Sensor recordSensorList[VOICES_COUNT] = {
+  {PIN_RECORD_LIST[0], 0, LOW, OFF, OFF, 0},
+  {PIN_RECORD_LIST[1], 0, LOW, OFF, OFF, 0},
+  {PIN_RECORD_LIST[2], 0, LOW, OFF, OFF, 0}
 };
+// ······································································· tones
+struct Sensor toneSensorList[VOICES_COUNT] = {
+  {PIN_TONE_LIST[0], 0, 0, 0, 0, 0},
+  {PIN_TONE_LIST[1], 0, 0, 0, 0, 0},
+  {PIN_TONE_LIST[2], 0, 0, 0, 0, 0}
+};
+// ····································································· measure
+unsigned long voiceTimeList[VOICES_COUNT] = {0.};
+// ----------------------------------------------------------------------- TEMPO
+struct Sensor tempoSensor = {PIN_TEMPO, 0, 0, 0, 0, 0};
+unsigned long tempoTime = 0.;
 
-Sensor *sensor;
-
+// ======================================================================== TIME
 const unsigned long MINUTE = 60000;
 unsigned long time = millis();
 unsigned long previousTime = millis();
 unsigned long elapsedTime = 0.;
 
-struct Sensor tempoSensor = {TEMPO_PIN_1, 0, 0, 0, 0, 0};
-
-unsigned long timeList[VOICES_COUNT] = {0.};
-
-const int STATE_RUNNING = 1;
-const int STATE_STOPPED = -1;
-struct Sensor stateSensor = {STATE_PIN, 0, LOW, STATE_STOPPED, STATE_STOPPED, 0};
-
-void setState();
-void setTempo();
-void toneEcho();
-void toneSensorFrequency();
-bool hysteresis(Sensor* currentSensor);
+Sensor *sensor;
 
 void setup() {
   Serial.begin(9600);
-  pinMode(stateSensor.pin, INPUT);
+  pinMode(onOffSensor.pin, INPUT);
   setFrequencies();
 }
 
@@ -82,7 +86,7 @@ void loop() {
 
   setState();
 
-  if (stateSensor.convertedValue == STATE_RUNNING) {
+  if (onOffSensor.convertedValue == ON) {
     setTempo();
     toneEcho();
     toneSensorFrequency();
@@ -90,15 +94,17 @@ void loop() {
 }
 
 void setState() {
-  stateSensor.value = digitalRead(stateSensor.pin);
+  onOffSensor.value = digitalRead(onOffSensor.pin);
 
-  if (time - stateSensor.lastValueUpdate > 500 && stateSensor.value == HIGH && stateSensor.previousValue != stateSensor.value) {
-    stateSensor.convertedValue *= -1;
-    stateSensor.previousConvertedValue = stateSensor.convertedValue;
-    stateSensor.lastValueUpdate = time;
+  if (time - onOffSensor.lastValueUpdate > 500 &&
+      onOffSensor.value == HIGH &&
+      onOffSensor.previousValue != onOffSensor.value) {
+    onOffSensor.convertedValue *= -1;
+    onOffSensor.previousConvertedValue = onOffSensor.convertedValue;
+    onOffSensor.lastValueUpdate = time;
   }
 
-  stateSensor.previousValue = stateSensor.value;
+  onOffSensor.previousValue = onOffSensor.value;
 }
 
 void setTempo() {
@@ -114,27 +120,28 @@ void setTempo() {
     tempoSensor.lastValueUpdate = time;
     tempoSensor.previousValue = tempoSensor.value;
     tempoSensor.previousConvertedValue = tempoSensor.convertedValue;
-    tempoSensor.convertedValue = MINUTE / (60. + tempoSensor.value * (210. - 60.) / 1024. + 1.);
+    tempoSensor.convertedValue = MINUTE /
+      (60. + tempoSensor.value * (210. - 60.) / 1024. + 1.);
 
     double tempoGap = tempoSensor.convertedValue / VOICES_COUNT;
     for (int i = 1; i < VOICES_COUNT; i++) {
-      timeList[i] = timeList[i - 1] + tempoGap;
+      voiceTimeList[i] = voiceTimeList[i - 1] + tempoGap;
     }
   }
 }
 
 void toneEcho() {
   for (int i = 0; i < VOICES_COUNT; i++) {
-    timeList[i] += elapsedTime;
-    if (timeList[i] > tempoSensor.convertedValue) {
-      timeList[i] -= tempoSensor.convertedValue;
-      sensor = &sensorList[i];
-      tone(PIEZO_PIN, sensor->previousConvertedValue, 20);
+    voiceTimeList[i] += elapsedTime;
+    if (voiceTimeList[i] > tempoSensor.convertedValue) {
+      voiceTimeList[i] -= tempoSensor.convertedValue;
+      sensor = &toneSensorList[i];
+      tone(PIN_SPEAKER, sensor->previousConvertedValue, 20);
       for (int j = 0; j < VOICES_COUNT; j++) {
         if (j == i) {
-          digitalWrite(LED_PINS[j], 1);
+          digitalWrite(PIN_RECORD_LED_LIST[j], 1);
         } else {
-          digitalWrite(LED_PINS[j], 0);
+          digitalWrite(PIN_RECORD_LED_LIST[j], 0);
         }
       }
     }
@@ -143,7 +150,7 @@ void toneEcho() {
 
 void toneSensorFrequency() {
   for (int i = 0; i < VOICES_COUNT; i++) {
-    sensor = &sensorList[i];
+    sensor = &toneSensorList[i];
     sensor->value = analogRead(sensor->pin);
 
     if (hysteresis(sensor)) {
@@ -152,11 +159,12 @@ void toneSensorFrequency() {
       sensor->convertedValue = getTone(sensor->value, i);
       sensor->previousConvertedValue = sensor->convertedValue;
 
-      tone(PIEZO_PIN, sensor->convertedValue, 50);
+      tone(PIN_SPEAKER, sensor->convertedValue, 50);
     }
   }
 }
 
 bool hysteresis(Sensor* currentSensor) {
-  return (time - currentSensor->lastValueUpdate > 100 && abs(currentSensor->value - currentSensor->previousValue) > 4);
+  return time - currentSensor->lastValueUpdate > 100 &&
+         abs(currentSensor->value - currentSensor->previousValue) > 4;
 }
