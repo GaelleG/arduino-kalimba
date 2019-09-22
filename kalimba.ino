@@ -94,17 +94,7 @@ void loop() {
 }
 
 void setState() {
-  onOffSensor.value = digitalRead(onOffSensor.pin);
-
-  if (time - onOffSensor.lastValueUpdate > 500 &&
-      onOffSensor.value == HIGH &&
-      onOffSensor.previousValue != onOffSensor.value) {
-    onOffSensor.convertedValue *= -1;
-    onOffSensor.previousConvertedValue = onOffSensor.convertedValue;
-    onOffSensor.lastValueUpdate = time;
-  }
-
-  onOffSensor.previousValue = onOffSensor.value;
+  setPushButton(&onOffSensor);
 }
 
 void setTempo() {
@@ -162,6 +152,20 @@ void toneSensorFrequency() {
       tone(PIN_SPEAKER, sensor->convertedValue, 50);
     }
   }
+}
+
+void setPushButton(Sensor* pushButton) {
+  pushButton->value = digitalRead(pushButton->pin);
+
+  if (time - pushButton->lastValueUpdate > 500 &&
+      pushButton->value == HIGH &&
+      pushButton->previousValue != pushButton->value) {
+    pushButton->convertedValue *= -1;
+    pushButton->previousConvertedValue = pushButton->convertedValue;
+    pushButton->lastValueUpdate = time;
+  }
+
+  pushButton->previousValue = pushButton->value;
 }
 
 bool hysteresis(Sensor* currentSensor) {
