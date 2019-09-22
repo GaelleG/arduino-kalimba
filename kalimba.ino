@@ -87,6 +87,7 @@ void loop() {
   setState();
 
   if (onOffSensor.convertedValue == ON) {
+    setRecorderState();
     setTempo();
     toneEcho();
     toneSensorFrequency();
@@ -94,7 +95,18 @@ void loop() {
 }
 
 void setState() {
-  setPushButton(&onOffSensor);
+  if (setPushButton(&onOffSensor)) {
+    for (int i = 0; i < VOICES_COUNT; ++i) {
+      recordSensorList[i].convertedValue = onOffSensor.convertedValue;
+      recordSensorList[i].previousConvertedValue = recordSensorList[i].convertedValue;
+    }
+  }
+}
+
+void setRecorderState() {
+  for (int i = 0; i < VOICES_COUNT; ++i) {
+    setPushButton(&recordSensorList[i]);
+  }
 }
 
 void setTempo() {
@@ -125,13 +137,15 @@ void toneEcho() {
     voiceTimeList[i] += elapsedTime;
     if (voiceTimeList[i] > tempoSensor.convertedValue) {
       voiceTimeList[i] -= tempoSensor.convertedValue;
-      sensor = &toneSensorList[i];
-      tone(PIN_SPEAKER, sensor->previousConvertedValue, 20);
-      for (int j = 0; j < VOICES_COUNT; j++) {
-        if (j == i) {
-          digitalWrite(PIN_RECORD_LED_LIST[j], 1);
-        } else {
-          digitalWrite(PIN_RECORD_LED_LIST[j], 0);
+      if (recordSensorList[i].convertedValue == ON) {
+        sensor = &toneSensorList[i];
+        tone(PIN_SPEAKER, sensor->previousConvertedValue, 20);
+        for (int j = 0; j < VOICES_COUNT; j++) {
+          if (j == i) {
+            digitalWrite(PIN_RECORD_LED_LIST[j], 1);
+          } else {
+            digitalWrite(PIN_RECORD_LED_LIST[j], 0);
+          }
         }
       }
     }
@@ -154,7 +168,8 @@ void toneSensorFrequency() {
   }
 }
 
-void setPushButton(Sensor* pushButton) {
+bool setPushButton(Sensor* pushButton) {
+  bool hasChanged = false;
   pushButton->value = digitalRead(pushButton->pin);
 
   if (time - pushButton->lastValueUpdate > 500 &&
@@ -163,9 +178,12 @@ void setPushButton(Sensor* pushButton) {
     pushButton->convertedValue *= -1;
     pushButton->previousConvertedValue = pushButton->convertedValue;
     pushButton->lastValueUpdate = time;
+    hasChanged = true;
   }
 
   pushButton->previousValue = pushButton->value;
+
+  return hasChanged;
 }
 
 bool hysteresis(Sensor* currentSensor) {
