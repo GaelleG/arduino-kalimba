@@ -34,12 +34,13 @@ struct Sensor {
 // ==================================================================== PIN LIST
 // ------------------------------------------------------------------------ read
 const int PIN_ON_OFF = 13;
-const int PIN_RECORD_LIST[VOICES_COUNT] = {12, 11, 10};
 const int PIN_TONE_LIST[VOICES_COUNT] = {A1, A2, A3};
+const int PIN_ON_OFF_LIST[VOICES_COUNT] = {8, 7, 6};
+const int PIN_RECORD_LIST[VOICES_COUNT] = {12, 11, 10};
 const int PIN_TEMPO = A0;
 // ----------------------------------------------------------------------- write
-const int PIN_SPEAKER = 3;
-const int PIN_RECORD_LED_LIST[VOICES_COUNT] = {7, 6, 5};
+const int PIN_SPEAKER = 9;
+const int PIN_ON_OFF_LED_LIST[VOICES_COUNT] = {5, 4, 3};
 
 // ================================================================= ACTION LIST
 // ---------------------------------------------------------------------- ON OFF
@@ -47,6 +48,12 @@ const int ON = 1;
 const int OFF = -1;
 struct Sensor onOffSensor = {PIN_ON_OFF, 0, LOW, OFF, OFF, 0};
 // ---------------------------------------------------------------------- VOICES
+// ······································································ on off
+struct Sensor onOffSensorList[VOICES_COUNT] = {
+  {PIN_ON_OFF_LIST[0], 0, LOW, OFF, OFF, 0},
+  {PIN_ON_OFF_LIST[1], 0, LOW, OFF, OFF, 0},
+  {PIN_ON_OFF_LIST[2], 0, LOW, OFF, OFF, 0}
+};
 // ······································································ record
 struct Sensor recordSensorList[VOICES_COUNT] = {
   {PIN_RECORD_LIST[0], 0, LOW, OFF, OFF, 0},
@@ -87,8 +94,8 @@ void loop() {
   setState();
 
   if (onOffSensor.convertedValue == ON) {
-    setRecorderState();
-    setRecorderLED();
+    setOnOffState();
+    setOnOffLED();
     setTempo();
     toneEcho();
     toneSensorFrequency();
@@ -98,24 +105,25 @@ void loop() {
 void setState() {
   if (setPushButton(&onOffSensor)) {
     for (int i = 0; i < VOICES_COUNT; ++i) {
-      recordSensorList[i].convertedValue = onOffSensor.convertedValue;
-      recordSensorList[i].previousConvertedValue = recordSensorList[i].convertedValue;
+      onOffSensorList[i].convertedValue = onOffSensor.convertedValue;
+      onOffSensorList[i].previousConvertedValue = onOffSensorList[i].convertedValue;
     }
+    setOnOffLED();
   }
 }
 
-void setRecorderState() {
+void setOnOffState() {
   for (int i = 0; i < VOICES_COUNT; ++i) {
-    setPushButton(&recordSensorList[i]);
+    setPushButton(&onOffSensorList[i])
   }
 }
 
-void setRecorderLED() {
+void setOnOffLED() {
   for (int i = 0; i < VOICES_COUNT; ++i) {
-    if (recordSensorList[i].value == HIGH) {
-      digitalWrite(PIN_RECORD_LED_LIST[i], 1);
+    if (onOffSensorList[i].convertedValue == HIGH) {
+      digitalWrite(PIN_ON_OFF_LED_LIST[i], 1);
     } else {
-      digitalWrite(PIN_RECORD_LED_LIST[i], 0);
+      digitalWrite(PIN_ON_OFF_LED_LIST[i], 0);
     }
   }
 }
@@ -148,7 +156,7 @@ void toneEcho() {
     voiceTimeList[i] += elapsedTime;
     if (voiceTimeList[i] > tempoSensor.convertedValue) {
       voiceTimeList[i] -= tempoSensor.convertedValue;
-      if (recordSensorList[i].convertedValue == ON) {
+      if (onOffSensorList[i].convertedValue == ON) {
         sensor = &toneSensorList[i];
         tone(PIN_SPEAKER, sensor->previousConvertedValue, 20);
       }
