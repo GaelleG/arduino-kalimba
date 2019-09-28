@@ -35,6 +35,7 @@ struct Sensor {
 };
 
 struct Voice {
+  int index;
   Sensor frequencySensor;
   Sensor onOffSensor;
   Sensor recordSensor;
@@ -70,6 +71,7 @@ unsigned long time = millis();
 unsigned long previousTime = millis();
 unsigned long elapsedTime = 0.;
 
+Voice *voice;
 Sensor *sensor;
 
 void setup() {
@@ -82,6 +84,7 @@ void setup() {
     pinMode(PIN_RECORD_LIST[i], INPUT_PULLUP);
 
     voiceList[i] = {
+      i,
       {PIN_TONE_LIST[i], 0, 0, 0, 0, 0},
       {PIN_ON_OFF_LIST[i], 0, LOW, OFF, OFF, 0},
       {PIN_RECORD_LIST[i], 0, LOW, OFF, OFF, 0},
@@ -99,10 +102,13 @@ void loop() {
   setState();
 
   if (onOffSensor.convertedValue == ON) {
-    setOnOffState();
     setTempo();
-    toneEcho();
-    toneSensorFrequency();
+    for (int i = 0; i < VOICES_COUNT; ++i) {
+      voice = &voiceList[i];
+      setVoiceOnOff(voice);
+      setVoiceFrequency(voice);
+      toneVoice(voice);
+    }
   }
 }
 
@@ -114,18 +120,6 @@ void setState() {
       voiceList[i].onOffSensor.previousConvertedValue = value;
     }
     setOnOffLED();
-  }
-}
-
-void setOnOffState() {
-  for (int i = 0; i < VOICES_COUNT; ++i) {
-    if (setPushButton(&(voiceList[i].onOffSensor))) {
-      if (voiceList[i].onOffSensor.convertedValue == HIGH) {
-        digitalWrite(voiceList[i].pinOnOffLED, 1);
-      } else {
-        digitalWrite(voiceList[i].pinOnOffLED, 0);
-      }
-    }
   }
 }
 
@@ -162,31 +156,40 @@ void setTempo() {
   }
 }
 
-void toneEcho() {
-  for (int i = 0; i < VOICES_COUNT; i++) {
-    voiceList[i].timeMeasure += elapsedTime;
-    if (voiceList[i].timeMeasure > tempoSensor.convertedValue) {
-      voiceList[i].timeMeasure -= tempoSensor.convertedValue;
-      if (voiceList[i].onOffSensor.convertedValue == ON) {
-        sensor = &(voiceList[i].frequencySensor);
-        tone(PIN_SPEAKER, sensor->previousConvertedValue, 20);
-      }
+void setVoiceOnOff(Voice* voice) {
+  sensor = &(voice->onOffSensor);
+
+  if (setPushButton(sensor)) {
+    if (sensor->convertedValue == HIGH) {
+      digitalWrite(voice->pinOnOffLED, 1);
+    } else {
+      digitalWrite(voice->pinOnOffLED, 0);
     }
   }
 }
 
-void toneSensorFrequency() {
-  for (int i = 0; i < VOICES_COUNT; i++) {
-    sensor = &(voiceList[i].frequencySensor);
-    sensor->value = analogRead(sensor->pin);
+void setVoiceFrequency(Voice* voice) {
+  sensor = &(voice->frequencySensor);
+  sensor->value = analogRead(sensor->pin);
 
-    if (hysteresis(sensor)) {
-      sensor->lastValueUpdate = time;
-      sensor->previousValue = sensor->value;
-      sensor->convertedValue = getTone(sensor->value, i);
-      sensor->previousConvertedValue = sensor->convertedValue;
+  if (hysteresis(sensor)) {
+    sensor->lastValueUpdate = time;
+    sensor->previousValue = sensor->value;
+    sensor->convertedValue = getTone(sensor->value, voice->index);
+    sensor->previousConvertedValue = sensor->convertedValue;
 
-      tone(PIN_SPEAKER, sensor->convertedValue, 50);
+    tone(PIN_SPEAKER, sensor->convertedValue, 50);
+  }
+}
+
+void toneVoice(Voice* voice) {
+  voice->timeMeasure += elapsedTime;
+
+  if (voice->timeMeasure > tempoSensor.convertedValue) {
+    voice->timeMeasure -= tempoSensor.convertedValue;
+    if (voice->onOffSensor.convertedValue == ON) {
+      sensor = &(voice->frequencySensor);
+      tone(PIN_SPEAKER, sensor->previousConvertedValue, 20);
     }
   }
 }
