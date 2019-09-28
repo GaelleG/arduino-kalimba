@@ -4,12 +4,15 @@
   Plays a range of notes that change according to the analog input.
 
   Circuit:
-  - 4 potentiometers 10k
-  - 4 push buttons
-  - 4 220 resistors
-  - 3 LEDs
-  - 3 10k resistors
   - 1 speaker
+  - 1 push button ON OFF
+  - 1 potentiometer 10k TEMPO
+  - per voice:
+    - 1 potentiometers 10k
+    - 1 red LED
+    - 1 blue LED
+    - 1 220 resistor
+    - 2 push buttons
 
   created  2019-07-05
   modified 2019-09-28
@@ -71,10 +74,13 @@ Sensor *sensor;
 
 void setup() {
   Serial.begin(9600);
-  pinMode(onOffSensor.pin, INPUT);
+  pinMode(onOffSensor.pin, INPUT_PULLUP);
   setFrequencies();
 
   for (int i = 0; i < VOICES_COUNT; ++i) {
+    pinMode(PIN_ON_OFF_LIST[i], INPUT_PULLUP);
+    pinMode(PIN_RECORD_LIST[i], INPUT_PULLUP);
+
     voiceList[i] = {
       {PIN_TONE_LIST[i], 0, 0, 0, 0, 0},
       {PIN_ON_OFF_LIST[i], 0, LOW, OFF, OFF, 0},
