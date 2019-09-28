@@ -12,7 +12,7 @@
   - 1 speaker
 
   created  2019-07-05
-  modified 2019-09-22
+  modified 2019-09-28
   by Gaelle Gomez
 
   GNU GPLv3
@@ -31,48 +31,37 @@ struct Sensor {
   int lastValueUpdate;
 };
 
-// ==================================================================== PIN LIST
-// ------------------------------------------------------------------------ read
-const int PIN_ON_OFF = 13;
-const int PIN_TONE_LIST[VOICES_COUNT] = {A1, A2, A3};
-const int PIN_ON_OFF_LIST[VOICES_COUNT] = {8, 7, 6};
-const int PIN_RECORD_LIST[VOICES_COUNT] = {12, 11, 10};
-const int PIN_TEMPO = A0;
-// ----------------------------------------------------------------------- write
-const int PIN_SPEAKER = 9;
-const int PIN_ON_OFF_LED_LIST[VOICES_COUNT] = {5, 4, 3};
+struct Voice {
+  Sensor frequencySensor;
+  Sensor onOffSensor;
+  Sensor recordSensor;
+  int pinOnOffLED;
+  unsigned long timeMeasure;
+};
 
-// ================================================================= ACTION LIST
-// ---------------------------------------------------------------------- ON OFF
+// -------------------------------------------------------------------- PIN LIST
+// ········································································ READ
+const int PIN_ON_OFF = 13;
+const int PIN_TEMPO = A0;
+// ······································································· WRITE
+const int PIN_SPEAKER = 11;
+
+// ----------------------------------------------------------------- ACTION LIST
+// ······································································ ON OFF
 const int ON = 1;
 const int OFF = -1;
 struct Sensor onOffSensor = {PIN_ON_OFF, 0, LOW, OFF, OFF, 0};
-// ---------------------------------------------------------------------- VOICES
-// ······································································ on off
-struct Sensor onOffSensorList[VOICES_COUNT] = {
-  {PIN_ON_OFF_LIST[0], 0, LOW, OFF, OFF, 0},
-  {PIN_ON_OFF_LIST[1], 0, LOW, OFF, OFF, 0},
-  {PIN_ON_OFF_LIST[2], 0, LOW, OFF, OFF, 0}
-};
-// ······································································ record
-struct Sensor recordSensorList[VOICES_COUNT] = {
-  {PIN_RECORD_LIST[0], 0, LOW, OFF, OFF, 0},
-  {PIN_RECORD_LIST[1], 0, LOW, OFF, OFF, 0},
-  {PIN_RECORD_LIST[2], 0, LOW, OFF, OFF, 0}
-};
-// ······································································· tones
-struct Sensor toneSensorList[VOICES_COUNT] = {
-  {PIN_TONE_LIST[0], 0, 0, 0, 0, 0},
-  {PIN_TONE_LIST[1], 0, 0, 0, 0, 0},
-  {PIN_TONE_LIST[2], 0, 0, 0, 0, 0}
-};
-// ····································································· measure
-unsigned long voiceTimeList[VOICES_COUNT] = {0.};
-// ----------------------------------------------------------------------- TEMPO
+// ······································································ VOICES
+const int PIN_TONE_LIST[VOICES_COUNT] = {A3, A2, A1};
+const int PIN_ON_OFF_LIST[VOICES_COUNT] = {3, 6, 9};
+const int PIN_RECORD_LIST[VOICES_COUNT] = {2, 5, 8};
+const int PIN_ON_OFF_LED_LIST[VOICES_COUNT] = {4, 7, 10};
+struct Voice voiceList[VOICES_COUNT] = {};
+// ······································································· TEMPO
 struct Sensor tempoSensor = {PIN_TEMPO, 0, 0, 0, 0, 0};
 unsigned long tempoTime = 0.;
 
-// ======================================================================== TIME
+// ------------------------------------------------------------------------ TIME
 const unsigned long MINUTE = 60000;
 unsigned long time = millis();
 unsigned long previousTime = millis();
@@ -84,6 +73,16 @@ void setup() {
   Serial.begin(9600);
   pinMode(onOffSensor.pin, INPUT);
   setFrequencies();
+
+  for (int i = 0; i < VOICES_COUNT; ++i) {
+    voiceList[i] = {
+      {PIN_TONE_LIST[i], 0, 0, 0, 0, 0},
+      {PIN_ON_OFF_LIST[i], 0, LOW, OFF, OFF, 0},
+      {PIN_RECORD_LIST[i], 0, LOW, OFF, OFF, 0},
+      PIN_ON_OFF_LED_LIST[i],
+      0.
+    };
+  }
 }
 
 void loop() {
@@ -95,7 +94,6 @@ void loop() {
 
   if (onOffSensor.convertedValue == ON) {
     setOnOffState();
-    setOnOffLED();
     setTempo();
     toneEcho();
     toneSensorFrequency();
@@ -104,9 +102,10 @@ void loop() {
 
 void setState() {
   if (setPushButton(&onOffSensor)) {
+    int value = onOffSensor.convertedValue;
     for (int i = 0; i < VOICES_COUNT; ++i) {
-      onOffSensorList[i].convertedValue = onOffSensor.convertedValue;
-      onOffSensorList[i].previousConvertedValue = onOffSensorList[i].convertedValue;
+      voiceList[i].onOffSensor.convertedValue = value;
+      voiceList[i].onOffSensor.previousConvertedValue = value;
     }
     setOnOffLED();
   }
@@ -114,16 +113,22 @@ void setState() {
 
 void setOnOffState() {
   for (int i = 0; i < VOICES_COUNT; ++i) {
-    setPushButton(&onOffSensorList[i])
+    if (setPushButton(&(voiceList[i].onOffSensor))) {
+      if (voiceList[i].onOffSensor.convertedValue == HIGH) {
+        digitalWrite(voiceList[i].pinOnOffLED, 1);
+      } else {
+        digitalWrite(voiceList[i].pinOnOffLED, 0);
+      }
+    }
   }
 }
 
 void setOnOffLED() {
   for (int i = 0; i < VOICES_COUNT; ++i) {
-    if (onOffSensorList[i].convertedValue == HIGH) {
-      digitalWrite(PIN_ON_OFF_LED_LIST[i], 1);
+    if (voiceList[i].onOffSensor.convertedValue == HIGH) {
+      digitalWrite(voiceList[i].pinOnOffLED, 1);
     } else {
-      digitalWrite(PIN_ON_OFF_LED_LIST[i], 0);
+      digitalWrite(voiceList[i].pinOnOffLED, 0);
     }
   }
 }
@@ -146,18 +151,18 @@ void setTempo() {
 
     double tempoGap = tempoSensor.convertedValue / VOICES_COUNT;
     for (int i = 1; i < VOICES_COUNT; i++) {
-      voiceTimeList[i] = voiceTimeList[i - 1] + tempoGap;
+      voiceList[i].timeMeasure = voiceList[i - 1].timeMeasure + tempoGap;
     }
   }
 }
 
 void toneEcho() {
   for (int i = 0; i < VOICES_COUNT; i++) {
-    voiceTimeList[i] += elapsedTime;
-    if (voiceTimeList[i] > tempoSensor.convertedValue) {
-      voiceTimeList[i] -= tempoSensor.convertedValue;
-      if (onOffSensorList[i].convertedValue == ON) {
-        sensor = &toneSensorList[i];
+    voiceList[i].timeMeasure += elapsedTime;
+    if (voiceList[i].timeMeasure > tempoSensor.convertedValue) {
+      voiceList[i].timeMeasure -= tempoSensor.convertedValue;
+      if (voiceList[i].onOffSensor.convertedValue == ON) {
+        sensor = &(voiceList[i].frequencySensor);
         tone(PIN_SPEAKER, sensor->previousConvertedValue, 20);
       }
     }
@@ -166,7 +171,7 @@ void toneEcho() {
 
 void toneSensorFrequency() {
   for (int i = 0; i < VOICES_COUNT; i++) {
-    sensor = &toneSensorList[i];
+    sensor = &(voiceList[i].frequencySensor);
     sensor->value = analogRead(sensor->pin);
 
     if (hysteresis(sensor)) {
