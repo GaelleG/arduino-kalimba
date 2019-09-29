@@ -62,6 +62,8 @@ const int PIN_RECORD_LIST[VOICES_COUNT] = {2, 5, 8};
 const int PIN_ON_OFF_LED_LIST[VOICES_COUNT] = {4, 7, 10};
 struct Voice voiceList[VOICES_COUNT] = {};
 // ······································································· TEMPO
+const int MEASURE = 8;
+int measureIndex = 0;
 struct Sensor tempoSensor = {PIN_TEMPO, 0, 0, 0, 0, 0};
 unsigned long tempoTime = 0.;
 
@@ -102,7 +104,7 @@ void loop() {
   setState();
 
   if (onOffSensor.convertedValue == ON) {
-    setTempo();
+    tempo();
     for (int i = 0; i < VOICES_COUNT; ++i) {
       voice = &voiceList[i];
       setVoiceOnOff(voice);
@@ -129,6 +131,21 @@ void setOnOffLED() {
       digitalWrite(voiceList[i].pinOnOffLED, 1);
     } else {
       digitalWrite(voiceList[i].pinOnOffLED, 0);
+    }
+  }
+}
+
+void tempo() {
+  setTempo();
+
+  tempoTime += elapsedTime;
+  if (tempoTime >= tempoSensor.convertedValue) {
+    tempoTime -= tempoSensor.convertedValue;
+    if (++measureIndex >= MEASURE) {
+      measureIndex = 0;
+      tone(PIN_SPEAKER, 3520, 2);
+    } else {
+      tone(PIN_SPEAKER, 1760, 2);
     }
   }
 }
