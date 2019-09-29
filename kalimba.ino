@@ -66,6 +66,10 @@ const int MEASURE = 8;
 int measureIndex = 0;
 struct Sensor tempoSensor = {PIN_TEMPO, 0, 0, 0, 0, 0};
 unsigned long tempoTime = 0.;
+// ····································································· SAMPLES
+int sampleList[VOICES_COUNT][MEASURE] = {
+  {0}
+};
 
 // ------------------------------------------------------------------------ TIME
 const unsigned long MINUTE = 60000;
@@ -83,7 +87,7 @@ void setup() {
 
   for (int i = 0; i < VOICES_COUNT; ++i) {
     pinMode(PIN_ON_OFF_LIST[i], INPUT_PULLUP);
-    pinMode(PIN_RECORD_LIST[i], INPUT_PULLUP);
+    pinMode(PIN_RECORD_LIST[i], INPUT);
 
     voiceList[i] = {
       i,
@@ -110,6 +114,7 @@ void loop() {
       setVoiceOnOff(voice);
       setVoiceFrequency(voice);
       toneVoice(voice);
+      recordVoice(voice);
     }
   }
 }
@@ -195,7 +200,7 @@ void setVoiceFrequency(Voice* voice) {
     sensor->convertedValue = getTone(sensor->value, voice->index);
     sensor->previousConvertedValue = sensor->convertedValue;
 
-    tone(PIN_SPEAKER, sensor->convertedValue, 50);
+    tone(PIN_SPEAKER, sensor->convertedValue, 20);
   }
 }
 
@@ -205,9 +210,36 @@ void toneVoice(Voice* voice) {
   if (voice->timeMeasure > tempoSensor.convertedValue) {
     voice->timeMeasure -= tempoSensor.convertedValue;
     if (voice->onOffSensor.convertedValue == ON) {
-      sensor = &(voice->frequencySensor);
-      tone(PIN_SPEAKER, sensor->previousConvertedValue, 20);
+      if (voice->recordSensor.convertedValue == OFF &&
+          sampleList[voice->index][measureIndex] > 0) {
+        tone(PIN_SPEAKER, sampleList[voice->index][measureIndex], 20);
+      } else {
+        sensor = &(voice->frequencySensor);
+        tone(PIN_SPEAKER, sensor->previousConvertedValue, 20);
+      }
     }
+  }
+}
+
+void recordVoice(Voice* voice) {
+  setRecord(voice);
+  sensor = &(voice->recordSensor);
+
+  if (sensor->convertedValue == ON) {
+    sampleList[voice->index][measureIndex] = voice->frequencySensor.previousConvertedValue;
+  }
+}
+
+void setRecord(Voice* voice) {
+  sensor = &(voice->recordSensor);
+  sensor->value = digitalRead(sensor->pin);
+
+  if (time - sensor->lastValueUpdate > 100 &&
+      sensor->value != sensor->previousValue) {
+    sensor->lastValueUpdate = time;
+    sensor->previousValue = sensor->value;
+    sensor->convertedValue = sensor->value == HIGH ? ON : OFF;
+    sensor->previousConvertedValue = sensor->convertedValue;
   }
 }
 
