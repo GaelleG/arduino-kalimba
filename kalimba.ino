@@ -8,14 +8,15 @@
   - 1 push button ON OFF
   - 1 potentiometer 10k TEMPO
   - per voice:
-    - 1 potentiometers 10k
+    - 1 potentiometer 10k
     - 1 red LED
+    - 1 10k resistor
     - 1 blue LED
     - 1 220 resistor
     - 2 push buttons
 
   created  2019-07-05
-  modified 2019-09-28
+  modified 2019-10-16
   by Gaelle Gomez
 
   GNU GPLv3
