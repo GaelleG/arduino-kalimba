@@ -40,7 +40,7 @@ struct Voice {
   Sensor onOffSensor;
   Sensor recordSensor;
   int pinOnOffLED;
-  unsigned long timeMeasure;
+  long timeMeasure;
 };
 
 // -------------------------------------------------------------------- PIN LIST
@@ -56,26 +56,26 @@ const int ON = 1;
 const int OFF = -1;
 struct Sensor onOffSensor = {PIN_ON_OFF, 0, LOW, OFF, OFF, 0};
 // ······································································ VOICES
-const int PIN_TONE_LIST[VOICES_COUNT] = {A3, A2, A1};
-const int PIN_ON_OFF_LIST[VOICES_COUNT] = {3, 6, 9};
 const int PIN_RECORD_LIST[VOICES_COUNT] = {2, 5, 8};
+const int PIN_ON_OFF_LIST[VOICES_COUNT] = {3, 6, 9};
 const int PIN_ON_OFF_LED_LIST[VOICES_COUNT] = {4, 7, 10};
+const int PIN_TONE_LIST[VOICES_COUNT] = {A3, A2, A1};
 struct Voice voiceList[VOICES_COUNT] = {};
 // ······································································· TEMPO
 const int MEASURE = 8;
 int measureIndex = 0;
 struct Sensor tempoSensor = {PIN_TEMPO, 0, 0, 0, 0, 0};
-unsigned long tempoTime = 0.;
+long tempoTime = 0;
 // ····································································· SAMPLES
 int sampleList[VOICES_COUNT][MEASURE] = {
   {0}
 };
 
 // ------------------------------------------------------------------------ TIME
-const unsigned long MINUTE = 60000;
-unsigned long time = millis();
-unsigned long previousTime = millis();
-unsigned long elapsedTime = 0.;
+const long MINUTE = 60000;
+long time = millis();
+long previousTime = millis();
+long elapsedTime = 0;
 
 Voice *voice;
 Sensor *sensor;
@@ -95,7 +95,7 @@ void setup() {
       {PIN_ON_OFF_LIST[i], 0, LOW, OFF, OFF, 0},
       {PIN_RECORD_LIST[i], 0, LOW, OFF, OFF, 0},
       PIN_ON_OFF_LED_LIST[i],
-      0.
+      0
     };
   }
 }
@@ -171,9 +171,9 @@ void setTempo() {
     tempoSensor.convertedValue = MINUTE /
       (60. + tempoSensor.value * (210. - 60.) / 1024. + 1.);
 
-    double tempoGap = tempoSensor.convertedValue / VOICES_COUNT;
+    long tempoGap = tempoSensor.convertedValue / VOICES_COUNT;
     for (int i = 1; i < VOICES_COUNT; i++) {
-      voiceList[i].timeMeasure = voiceList[i - 1].timeMeasure + tempoGap;
+      voiceList[i].timeMeasure = voiceList[i - 1].timeMeasure - tempoGap;
     }
   }
 }
