@@ -92,8 +92,8 @@ void setup() {
     voiceList[i] = {
       i,
       {PIN_TONE_LIST[i], 0, 0, 0, 0, 0},
-      {PIN_ON_OFF_LIST[i], 0, LOW, OFF, OFF, 0},
-      {PIN_RECORD_LIST[i], 0, LOW, OFF, OFF, 0},
+      {PIN_ON_OFF_LIST[i], HIGH, HIGH, OFF, OFF, 0},
+      {PIN_RECORD_LIST[i], LOW, LOW, OFF, OFF, 0},
       PIN_ON_OFF_LED_LIST[i],
       0
     };
