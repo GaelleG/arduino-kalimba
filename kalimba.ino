@@ -44,35 +44,47 @@ struct Voice {
   long timeMeasure;
 };
 
-// -------------------------------------------------------------------- PIN LIST
-// ········································································ READ
-const int PIN_ON_OFF = 13;
-const int PIN_TEMPO = A0;
-// ······································································· WRITE
-const int PIN_SPEAKER = 11;
+void setState();
+void setOnOffLED();
 
-// ----------------------------------------------------------------- ACTION LIST
-// ······································································ ON OFF
+void tempo();
+void setTempo();
+
+void setVoiceOnOff(Voice* voice);
+void setVoiceFrequency(Voice* voice);
+void toneVoice(Voice* voice);
+void recordVoice(Voice* voice);
+void setRecord(Voice* voice);
+
+bool setPushButton(Sensor* pushButton);
+bool hysteresis(Sensor* currentSensor);
+
 const int ON = 1;
 const int OFF = -1;
-struct Sensor onOffSensor = {PIN_ON_OFF, 0, LOW, OFF, OFF, 0};
-// ······································································ VOICES
+
+const int PIN_ON_OFF = 13;
+const int PIN_TEMPO = A0;
+
 const int PIN_RECORD_LIST[VOICES_COUNT] = {2, 5, 8};
 const int PIN_ON_OFF_LIST[VOICES_COUNT] = {3, 6, 9};
 const int PIN_ON_OFF_LED_LIST[VOICES_COUNT] = {4, 7, 10};
 const int PIN_TONE_LIST[VOICES_COUNT] = {A3, A2, A1};
+
+const int PIN_SPEAKER = 11;
+
+struct Sensor onOffSensor = {PIN_ON_OFF, 0, LOW, OFF, OFF, 0};
+struct Sensor tempoSensor = {PIN_TEMPO, 0, 0, 0, 0, 0};
+
 struct Voice voiceList[VOICES_COUNT] = {};
-// ······································································· TEMPO
+
 const int MEASURE = 8;
 int measureIndex = 0;
-struct Sensor tempoSensor = {PIN_TEMPO, 0, 0, 0, 0, 0};
 long tempoTime = 0;
-// ····································································· SAMPLES
+
 int sampleList[VOICES_COUNT][MEASURE] = {
   {0}
 };
 
-// ------------------------------------------------------------------------ TIME
 const long MINUTE = 60000;
 long time = millis();
 long previousTime = millis();

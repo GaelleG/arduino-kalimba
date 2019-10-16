@@ -1,5 +1,9 @@
 #include "notes.h"
 
+void setFrequencies();
+int getFrequency(double quotient);
+int getTone(int signal, int sensorIndex);
+
 const int VOICES_COUNT = 3;
 const int NOTES_COUNT = 7 * 3;
 
