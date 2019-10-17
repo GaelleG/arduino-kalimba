@@ -1,6 +1,5 @@
 #define ANALOG_MAX    1024.
-#define TONE_A1        110.
-#define OCTAVE           3.
+#define TONE_A0         55.
 #define QUOTIENT_A   0./12.
 #define QUOTIENT_AS  1./12.
 #define QUOTIENT_B   2./12.
